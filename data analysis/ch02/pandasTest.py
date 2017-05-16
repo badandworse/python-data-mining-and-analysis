@@ -36,3 +36,12 @@ by_tz_os=cframe.groupby(['tz',operating_system])
 agg_counts=by_tz_os.size().unstack().fillna(0)
 agg_counts[:10]
 indexer=agg_counts.sum(1).argsort()
+indexer[:10]
+count_subset=agg_counts.take(indexer)[-10:]
+count_subset
+
+count_subset.plot(kind='barh',stacked=True)
+#%%
+#按比例分组后画图根据清晰，windows+not windows的sum为1
+normed_subset=count_subset.div(count_subset.sum(1),axis=0)
+normed_subset.plot(kind='barh',stacked=True)
