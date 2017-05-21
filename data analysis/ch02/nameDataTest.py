@@ -69,3 +69,74 @@ total_births
 #%%
 subset=total_births[['John','Harry','Mary','Marilyn']]
 subset.plot(subplots=True,figsize=(12,10),grid=False,title='Number of births per year')
+
+
+#%%
+#评估命名多样性的增长
+table=top1000.pivot_table('prop',index='year',columns='sex',aggfunc='sum')
+table.plot(title='Sum of table1000.prop by year and sex',yticks=np.linspace(0,1.2,13),xticks=range(1880,2020,10))
+
+df=boys[boys.year==2010]
+df
+
+prop_cumsum=df.sort_index(by='prop',ascending=False).prop.cumsum()
+prop_cumsum[:20]
+prop_cumsum.searchsorted(0.5)
+
+df=boys[boys.year==1900]
+in1900=df.sort_index(by='prop',ascending=False).prop.cumsum()
+in1900.searchsorted(0.5)+1
+
+def get_quantitle_count(group,q=0.5):
+    group=group.sort_index(by='prop',ascending=False)
+    return group.prop.cumsum().searchsorted(q)+1
+
+
+#得到的数据想是string，因此需要使用astype将其数据转换为 numeric data
+diversity=top1000.groupby(['year','sex']).apply(get_quantitle_count)
+diversity=diversity.unstack('sex')
+diversity.head()
+diversity=diversity.astype(float)
+diversity.plot(title='number of popular names in top 50%')
+
+
+#"最后一个字母"的变革
+
+#%%
+#从name列中取出最后一个字母
+get_last_letter=lambda x: x[-1]
+last_letters=names.name.map(get_last_letter)
+last_letters.name='last_letter'
+table=names.pivot_table('birth',index=last_letters,columns=['sex','year'],aggfunc='sum')
+
+subtable=table.reindex(columns=[1910,1960,2010],level='year')
+subtable.head()
+#%%
+subtable.sum()
+letter_prop=subtable/subtable.sum().astype(float)
+
+fig,axes=pl.subplots(2,1,figsize=(10,8))
+letter_prop['M'].plot(kind='bar',rot=0,ax=axes[0],title='Male')
+letter_prop['F'].plot(kind='bar',rot=0,ax=axes[1],title='FeMale',legend=False)
+
+letter_prop=table/table.sum().astype(float)
+dny_ts=letter_prop.ix[['d','n','y'],'M'].T
+dny_ts.head()
+dny_ts.plot()
+
+all_names=top1000.name.unique()
+mask=np.array(['lesl' in x.lower() for x in all_names])
+
+lesley_like=all_names[mask]
+lesley_like
+
+filtered=top1000[top1000.name.isin(lesley_like)]
+filtered.groupby('name').birth.sum()
+
+#%%
+table=filtered.pivot_table('birth',index='year',columns='sex',aggfunc='sum')
+table=table.div(table.sum(1),axis=0)
+table.tail()
+
+table.plot(style={'M':'k-','F':'k--'})
+
