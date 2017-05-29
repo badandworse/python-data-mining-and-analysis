@@ -58,3 +58,34 @@ frame2
 frame.set_index(['c','d'],drop=False)
 #reset_index的功能跟set_index刚好相反.层次化索引的级别会被转移到列里面
 frame2.reset_index()
+
+
+#其他相关pandas的话题
+
+#%%
+# 整数索引
+ser=Series(np.arange(3.))
+ser
+#会报错，当series的index为整数时，无法使用这种
+ser[-1]
+#必须使用存在的索引
+ser[1]
+
+#而对于非整数索引，就没有这样的歧义
+ser2=Series(np.arange(3.),index=['a','b','c'])
+ser2[-1]
+
+#为了保持良好的一致性，如果你得轴索引包含索引器，那么根据整数索引进行数据选取的操作总是面向标签的。
+ser.ix[:0]
+
+#可靠的继续位置的索引的方法：
+#  Series的iget_value 
+#  DataFrame的irow和icol irow 选取每列中对应位置的元素 icol选取每行中对应位置的元素
+ser3=Series(range(3),index=[-5,1,3])
+ser3.iget_value(2)
+frame3=DataFrame(np.arange(6).reshape(3,2),index=[2,0,1])
+frame3.irow(0)
+frame3.icol(0)
+
+#面板数据
+# 没看
