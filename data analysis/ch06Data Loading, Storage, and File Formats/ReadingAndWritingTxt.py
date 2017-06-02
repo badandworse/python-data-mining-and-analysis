@@ -9,6 +9,10 @@ fillpath='C:/Users/xg302/git/python-data-mining-and-analysis/data analysis/ch06D
 #read_csv将其读入一个DataFrame,自动按逗号分割
 df=pd.read_csv('C:/Users/xg302/git/python-data-mining-and-analysis/data analysis/ch06Data Loading, Storage, and File Formats/ex1.csv')
 df
+filepath2='C:/Users/xg302/git/python-data-mining-and-analysis/data analysis/ch06Data Loading, Storage, and File Formats/'
+
+testKey=pd.read_csv(filepath2+'bs.txt')
+testKey
 
 #read_table也可以，不过得指定分隔符，此处是‘,’
 pd.read_table(fillpath,sep=',')
@@ -19,6 +23,7 @@ filepath2='C:/Users/xg302/git/python-data-mining-and-analysis/data analysis/ch06
 pd.read_csv(filepath2+'ex2.csv',header=None)
 
 pd.read_csv(filepath2+'ex2.csv',names=['a','b','c','d','message'])
+
 
 #如果需要某列做索引，可以使用index_col来指定某列做索引,例子中是将message列做索引
 pd.read_csv(filepath2+'ex2.csv',names=['a','b','c','d','message'],index_col='message')
