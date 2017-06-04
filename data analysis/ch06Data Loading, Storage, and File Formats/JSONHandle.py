@@ -47,3 +47,43 @@ links[15:20]
 
 lnk=links[28]
 lnk
+
+
+#%%
+#使用HTML和Web API
+import requests
+
+url='http://search.twitter.com/search.json?q=python%20pandas'
+resp=requests.get(url)
+
+resp
+
+#%%
+#使用数据库
+import sqlite3
+
+query='''CREATE TABLE test(a VARCHAR(20),b VARCHAR(20),c REAL, d INTEGER);'''
+con=sqlite3.connect(':memory:')
+con.execute(query)
+con.commit()
+
+data=[('Atlanta','Georgia',1.25,6),
+        ('Tallahassee','Florida',2.6,3),
+        ('Sacramento','California',1.7,5)]
+stmt="INSERT INTO test VALUES(?,?,?,?)"
+con.executemany(stmt,data)
+con.commit()
+
+cursor=con.execute('select * from test')
+rows=cursor.fetchall()
+rows
+
+#获取列名
+cursor.description
+
+DataFrame(rows,columns=list(zip(*cursor.description))[0])
+list(zip(*cursor.description))
+
+#pandas.io.sql 中的read_sql_query 只需传入select语句和连接对象即可
+import pandas.io.sql as sql
+sql.read_sql_query('select * from test',con)
