@@ -5,6 +5,7 @@ from pandas import Series,DataFrame
 import decimal
 from decimal import Decimal,ROUND_HALF_UP
 
+
 #%%
 #读取数据文件，默认数据文件为经过处理的csv，
 def readData(filePath,fileName):
@@ -23,31 +24,12 @@ def getGini(dt,attr1,setIndex):
         while n<sumAttr:
             attrdt=dt.copy(deep=True)
             attrdt[attr1]=(attrdt[attr1]==Attr[n]).astype(int)
-            group2=attrdt.groupby([attr1,setIndex]).size()         
-            group3=attrdt.groupby([attr1])
-            p1=group3.size()/group3.size().sum()
-            indexAttr=p1.index
-            sum=0
-            for i in indexAttr:
-                size1=group2[i]
-                p=size1/size1.sum()
-                sum=sum+p1[i]*2*p[i]*(1-p[i])
-            sum=Decimal(sum).quantize(Decimal('.01'),rounding=ROUND_HALF_UP)
+            sum=computeGini(attrdt,attr1,setIndex)
             GiniList.append(float(sum))
             n=n+1
         return GiniList
     else:
-        group2=dt.groupby([attr1,setIndex]).size()
-        group3=dt.groupby([attr1]).size()
-        p1=group3/group3.sum()
-        indexAttr=p1.index
-        sum=0
-        for i in indexAttr:
-            size1=group2[i]
-            #print(size1)
-            p=size1/size1.sum()
-            sum=sum+p1[i]*2*p[i]*(1-p[i])
-        sum=Decimal(sum).quantize(Decimal('.01'),rounding=ROUND_HALF_UP) 
+        sum=computeGini(dt,attr1,setIndex)        
         GiniList.append(float(sum))
         return GiniList
 
@@ -75,9 +57,30 @@ dataF=readData(filepath,filename)
 #dataF['age']=(dataF['age']==2).astype(int)
 
 charactersNum=len(dataF.columns)-1
-charactersIndex=dataF.columns
-
+charactersIndex=dataF.columns[:charactersNum]
+charactersIndex
+ll=[4,2,3]
+ll.sort()
+ll
 #%%
 n=0
-list1=getGini(dataF[[charactersIndex[1],charactersIndex[charactersNum]]],charactersIndex[1],charactersIndex[charactersNum])
-list1
+
+#%%
+setIndex1=dataF.columns[len(dataF.columns)-1]
+minIndex=''
+minValue=10000
+setIndex1
+while True:
+    for m in charactersIndex:
+        valuesList=getGini(dataF[[m,setIndex1]],m,setIndex1)
+        valuesList.sort()
+        if valuesList[0]<minValue:
+            minValue=valuesList[0]
+            minIndex=m
+    break
+
+minIndex
+minValue
+
+
+#todo : 树的生成未完成，有点没有头绪，决定补下算法
