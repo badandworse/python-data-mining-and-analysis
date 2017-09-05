@@ -3,6 +3,7 @@ from numpy import arange,array,random,floor,transpose
 from numpy import resize,sin
 import scipy
 
+
 a=arange(15).reshape(3,5)
 a.shape
 a.ndim   #array的纬度，此处为2
@@ -95,7 +96,8 @@ b
 np.vstack((a,b)) #按行链接
 np.hstack((a,b)) #按列链接
 np.column_stack((a,b))
-
+#np.r_按row来组合array
+#np.c_按column来组合array
 np.r_[1:4,0,4]
 #deep copy
 b=a.copy()
