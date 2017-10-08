@@ -174,7 +174,6 @@ plt.show()
 
 
 #第七部分 简单数据预处理
-# to do 
 
 #数据预处理 包含 feature engineering 过程
 #特征工程十分重要
@@ -187,6 +186,7 @@ plt.show()
 #用scikit-lean中的RandomForest拟合
 
 #%%
+data_train=pd.read_csv('train.csv')
 from sklearn.ensemble import RandomForestRegressor
 #利用随机森林补全缺失值
 def set_missing_ages(df):
@@ -235,44 +235,31 @@ dummies_Cabin=pd.get_dummies(data_train['Cabin'],prefix='Cabin')
 dummies_Embarked=pd.get_dummies(data_train['Embarked'],prefix='Embarked')
 dummies_Sex=pd.get_dummies(data_train['Sex'],prefix='Sex')
 dummies_Pclass=pd.get_dummies(data_train['Pclass'],prefix='Pclass')
-
 df=pd.concat([data_train,dummies_Cabin,dummies_Embarked,dummies_Sex,dummies_Pclass],axis=1)
 
 df.drop(['Pclass','Name','Sex','Ticket','Cabin','Embarked'],axis=1,inplace=True)
-df
+df.describe()
 
 #%%
+#对数值变化较大的特征，缩小到[-1,1]
 #观察处理完的数据，发明Age和Fare两个属性，乘客的数值复读变化很大
 #做逻辑回归与梯度下降的话，各属性之间scale差距太大，将会使收敛速度变慢，甚至不收敛
 #使用scikit-learn里的preprocessing模块对Age和Fare做一个scaling
 #将变化幅度较大的特征化到[-1,1]之内
 import sklearn.preprocessing as preprocessing
 '''
-scaler=preprocessing.StandardScaler()
 age_scale_param=scaler.fit(df['Age'])
 age_scale_param
 df['Age_scaled']=scaler.fit_transform(df['Age'],age_scale_param)
-#%%
 fare_scale_param=scaler.fit(df['Fare'])
 df['Fare_scaled']=scaler.fit_transform(df['Age'],fare_scale_param)
 df
 '''
 #新版本里面，scaler对象化的数据必须以行为单位，必须有多行
 
-#%%
-X=np.array([df['Age']])
-X.shape
-X_scaled=preprocessing.scale(X)
-X_scaled.mean(axis=0)
 
 #%%
-XX=np.array([[1.],
-             [ 2.],
-             [ 0.]])
-XX.shape
-#%%
-XX_scaled = preprocessing.scale(XX)
-XX_scaled
+scaler=preprocessing.StandardScaler()
 X=np.array(df['Age'])
 
 Tage=X.reshape(-1,1)
@@ -289,7 +276,7 @@ fare=scaler.fit_transform(fare,fare_scale_param)
 fare.shape
 T_fare=fare.reshape(891,)
 df['Fare_Scale']=Series(T_fare)
-df
+df.info()
 
 
 #%%
@@ -298,7 +285,6 @@ from sklearn import linear_model
 # 首先把需要的feature字段提取出来
 train_df=df.filter(regex='Survived|Age_.*|SibSp|Parch|Fare_.*|Cabin_.*|Embarked_.*|Sex_.*|Pclass_.*')
 train_np=train_df.as_matrix()
-
 # y即Survival结果
 y=train_np[:,0]
 
@@ -333,7 +319,6 @@ df_test.drop(['Pclass','Name','Sex','Ticket','Cabin','Embarked'],axis=1,inplace=
 Test_age=np.array(df_test['Age']).reshape(-1,1)
 Test_age=scaler.fit_transform(Test_age,age_scale_param)
 Test_age=Test_age.reshape(418,)
-Test_age
 df_test['Age_Scale']=Series(Test_age)
 
 #%%
@@ -351,3 +336,135 @@ predictions
 
 result=pd.DataFrame({'PassengerId':data_test['PassengerId'].as_matrix(),'Survived':predictions.astype(np.int32)})
 result.to_csv("logistic_regression_result.csv",index=False)
+
+
+#9逻辑回归系统优化
+
+#将model系数和 feature关联起来
+#系数为正与结果正相关，反之负相关
+#%%
+#9.1 逻辑系数关联分析
+pd.DataFrame({"columns":list(train_df.columns)[1:],'coef':list(clf.coef_.T)})
+
+#9.2交叉验证
+#即将训练集分成两部分，一部分用于训练我们需要的模型
+#另一部分数据上看我们预测算法的效果
+
+#%%
+from sklearn import cross_validation
+
+clf=linear_model.LogisticRegression(C=1.0,penalty='l1',tol=1e-6)
+all_data=df.filter(regex='Survived|Age_.*|SibSp|Parch|Fare_.*|Cabin_.*|Embarked_.*|Sex_.*|Pclass_.*')
+X=all_data.as_matrix()[:,1:]
+y=all_data.as_matrix()[:,0]
+print(cross_validation.cross_val_score(clf,X,y,cv=5))
+
+#%%
+#分割数据，按照 训练数据:cv数据=7：3
+split_train,split_cv=cross_validation.train_test_split(df,test_size=0.3,random_state=0)
+train_df=split_train.filter(regex='Survived|Age_.*|SibSp|Parch|Fare_.*|Cabin_.*|Embarked_.*|Sex_.*|Pclass_.*')
+
+#生成模型
+clf=linear_model.LogisticRegression(C=1.0,penalty='l1',tol=1e-6)
+clf.fit(train_df.as_matrix()[:,1:],train_df.as_matrix()[:,0])
+
+#对cross validation数据进行预测
+cv_df=split_cv.filter(regex='Survived|Age_.*|SibSp|Parch|Fare_.*|Cabin_.*|Embarked_.*|Sex_.*|Pclass_.*')
+predictions=clf.predict(cv_df.as_matrix()[:,1:])
+#%%
+origin_data_train=pd.read_csv('train.csv')
+bad_case=origin_data_train.loc[origin_data_train['PassengerId'].isin(split_cv[predictions!=cv_df.as_matrix()[:,0]]['PassengerId'].values)]
+bad_case.to_csv("bad_case.csv",index=False)
+
+#总结：根据对badcase的观察来决定下一步怎么优化。
+
+#9.3learning curves
+#做特征工程的时候，产生的特征越来越多这些特征去训练模型，
+#会对我们的训练集拟合得越来越好，同时也可能在逐步丧失泛化能力，
+#从而在待预测的数据上，
+#表现不佳，也就是发生过拟合问题。
+
+#从另一个角度上说，如果模型在待预测的数据上表现不佳，
+#除掉上面说的过拟合问题，也有可能是欠拟合问题，
+#也就是说在训练集上，其实拟合的也不是那么好。
+
+#用scikit-learn里面的learning_curve来分别模型的状态
+
+#%%
+from sklearn.learning_curve import learning_curve
+
+# 用sklearn的learning_curve得到training_score和cv_score，
+def plot_learing_curve(estimator,title,X,y,ylim=None,cv=None,
+                        n_jobs=1,train_sizes=np.linspace(.05,1.,20),verbose=0,plot=True):
+    """
+    画出data在某模型上的learning curve.
+    参数解释
+    ----------
+    estimator : 你用的分类器。
+    title : 表格的标题。
+    X : 输入的feature，numpy类型
+    y : 输入的target vector
+    ylim : tuple格式的(ymin, ymax), 设定图像中纵坐标的最低点和最高点
+    cv : 做cross-validation的时候，数据分成的份数，其中一份作为cv集，其余n-1份作为training(默认为3份)
+    n_jobs : 并行的的任务数(默认1)
+    """
+    train_size,train_scores,test_scores=learning_curve(estimator,X,y,
+                                                        cv=cv,n_jobs=n_jobs,train_sizes=train_sizes,verbose=verbose)
+
+    train_scores_mean=np.mean(train_scores,axis=1)
+    train_scores_std=np.std(train_scores,axis=1)
+    test_scores_mean=np.mean(test_scores,axis=1)    
+    test_scores_std=np.std(test_scores,axis=1)
+
+    if plot:
+        plt.figure()
+        plt.title(title)
+        if ylim is not None:
+            plt.ylim(*ylim)
+        plt.xlabel(u"训练样本书数")
+        plt.ylabel(u"得分")
+        plt.gca().invert_yaxis()
+        plt.grid()
+
+        plt.fill_between(train_sizes,train_scores_mean-train_scores_std,
+                         train_scores_mean+train_scores_std,alpha=0.1,color='b')
+        plt.fill_between(train_sizes,test_scores_mean-test_scores_std,
+                         test_scores_mean+test_scores_std,alpha=0.1,color='r')
+        plt.plot(train_sizes,train_scores_mean,'o-',color='b',label=u"训练集上得分")
+        plt.plot(train_sizes,test_scores_mean,'o-',color='r',label=u"交叉训练集上得分")
+
+        plt.legend(loc="best")
+
+        plt.draw()
+        plt.show()
+        plt.gca().invert_yaxis()
+    midpoint=((train_scores_mean[-1]+train_scores_std[-1])+(test_scores_mean[-1]-test_scores_std[-1]))/2
+    diff=(train_scores_mean[-1]+train_scores_std[-1])-(test_scores_mean[-1]-test_scores_std[-1])
+    return midpoint,diff
+
+plot_learning_curve(clf, u"学习曲线", X, y)
+
+
+#10模型融合
+
+#%%
+from sklearn.ensemble import BaggingRegressor
+
+train_df=df.filter(regex='Survived|Age_.*|SibSp|Parch|Fare_.*|Cabin_.*|Embarked_.*|Sex_.*|Pclass.*|Mother|Child|Family|Title')
+train_np=train_df.as_matrix()
+
+# y即Survival结果
+y=train_np[:,0]
+
+# X即特征属性值
+X=train_np[:,1:]
+
+# fit到BaggingRegressor中
+clf=linear_model.LogisticRegression(C=1.0,penalty='l1',tol=1e-6)
+bagging_clf=BaggingRegressor(clf,n_estimators=20,max_samples=0.8,max_features=1.0,bootstrap=True,bootstrap_features=False,n_jobs=-1)
+bagging_clf.fit(X,y)
+
+test=df_test.filter(regex='Survived|Age_.*|SibSp|Parch|Fare_.*|Cabin_.*|Embarked_.*|Sex_.*|Pclass.*|Mother|Child|Family|Title')
+predictions=bagging_clf.predict(test)
+result=pd.DataFrame({'PassengerId':data_test['PassengerId'].as_matrix(),'Survived':predictions.astype(np.int32)})
+result.to_csv('logistic_regression_bagging_predictions2nd.csv',index=False)
