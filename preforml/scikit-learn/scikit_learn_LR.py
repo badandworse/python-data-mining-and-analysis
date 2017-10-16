@@ -1,6 +1,11 @@
+'''
+逻辑斯蒂回归对类别概率建模
+'''
+
 #%%
 import numpy as np
 from sklearn import datasets
+import matplotlib.pyplot as plt
 import seaborn as sns
 
 #%%
@@ -26,21 +31,27 @@ sc=StandardScaler()
 sc.fit(X_train)  
 X_train_std=sc.transform(X_train)
 X_test_std=sc.transform(X_test)
-
-#用感知机模型直接训练数据机
 #%%
-from sklearn.linear_model import Perceptron
-ppn=Perceptron(n_iter=40,eta0=0.1,random_state=0)
-ppn.fit(X_train_std,y_train)
-y_pred=ppn.predict(X_test_std)
+from sklearn.linear_model import LogisticRegression
+
+'''
+C是正则向中系数的倒数
+C越小，正则话的损失函数越小
+'''
+lr=LogisticRegression(C=1000.0,random_state=0)
+lr.fit(X_train_std,y_train)
+y_pred=lr.predict(X_test_std)
 print('Misclassfied samples: %d' %(y_test!=y_pred).sum())
-#%%
-#metrics包含许多评价指标
-from sklearn.metrics import accuracy_score
-print('Accuracy:%.2f' %accuracy_score(y_test,y_pred))
 
 #%%
+#绘制通过函数得到的
+X_combined_std=np.vstack((X_train_std,X_test_std))
+y_combined=np.hstack((y_train,y_test))
+plot_decision_regions(X=X_combined_std,y=y_combined,classifier=lr,test_idx=range(105,150))
+
+
 #绘图函数
+#%%
 from matplotlib.colors import ListedColormap
 import matplotlib.pyplot as plt
 def plot_decision_regions(X,y,classifier,test_idx=None,resolution=0.02):
@@ -72,18 +83,4 @@ def plot_decision_regions(X,y,classifier,test_idx=None,resolution=0.02):
     if test_idx:
         X_test,y_test=X[test_idx,:],y[test_idx]
         plt.scatter(X_test[:,0],X_test[:,1],c='',alpha=1.0,linewidths=1,marker='o',s=55,label='test set')
-
-
-#%%
-X_combined_std=np.vstack((X_train_std,X_test_std))
-y_combined=np.hstack((y_train,y_test))
-plot_decision_regions(X=X_combined_std,y=y_combined,classifier=ppn,test_idx=range(105,150))
-
-plt.xlabel('petal length [standardized]')
-plt.ylabel('petal width [standardized]')
-plt.legend(loc='upper left')
-plt.show()
-X_combined_std
-
-np.array([5,6,3,4,5,3]).reshape(6,1)
-
+ 
