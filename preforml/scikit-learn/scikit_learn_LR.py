@@ -32,7 +32,7 @@ sc.fit(X_train)
 X_train_std=sc.transform(X_train)
 X_test_std=sc.transform(X_test)
 #%%
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import Logistic Regression
 
 '''
 C是正则向中系数的倒数
