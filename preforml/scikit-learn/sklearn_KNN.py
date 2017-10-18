@@ -1,17 +1,7 @@
 '''
-随机森林算法：
-通过自助法构建大小为n的一个训练集，即重复抽样选择n个训练样例
-对于刚得到的训练集，构建决策树
-同时对每个节点:
-通过不重复抽样选择d个特征
-利用上面的d个特征，选择某种度量分割节点 
-重复步骤1.2 k次
-对于每一个测试样例，对k颗决策树的预测结果进行投票，
-票数最多的结果就是随机森林的预测结果
-
+k近邻(k-nearest neighbor classifier ,knn):
 
 '''
-
 
 #%%
 import numpy as np
@@ -19,7 +9,6 @@ from sklearn import datasets
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-#数据处理
 #%%
 #iris.data 有150个样本点，每个样本点有4个特征
 iris=datasets.load_iris()
@@ -33,7 +22,6 @@ np.unique(y)
 #交叉检验，将样本中的30%拿出来检验样本
 from sklearn.cross_validation import train_test_split
 X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=0.3,random_state=0)
-
 #%%
 #数据标准化
 #sklearn 中的 StandardScaler
@@ -44,15 +32,8 @@ sc.fit(X_train)
 X_train_std=sc.transform(X_train)
 X_test_std=sc.transform(X_test)
 
-#%%
-X_combined_std=np.vstack((X_train_std,X_test_std))
-y_combined=np.hstack((y_train,y_test))
 
 
-
-'''
-绘图函数
-'''
 #%%
 from matplotlib.colors import ListedColormap
 import matplotlib.pyplot as plt
@@ -85,17 +66,30 @@ def plot_decision_regions(X,y,classifier,test_idx=None,resolution=0.02):
     if test_idx:
         X_test,y_test=X[test_idx,:],y[test_idx]
         plt.scatter(X_test[:,0],X_test[:,1],c='',alpha=1.0,linewidths=1,marker='o',s=55,label='test set')
- 
 
-#随机森林
 #%%
-from sklearn.ensemble import RandomForestClassifier
-forest=RandomForestClassifier(criterion="entropy",n_estimators=10,random_state=1,n_jobs=2)
-forest.fit(X_train_std,y_train)
+#绘制通过函数得到的
+X_combined_std=np.vstack((X_train_std,X_test_std))
+y_combined=np.hstack((y_train,y_test))
+plot_decision_regions(X=X_combined_std,y=y_combined,classifier=tree,test_idx=range(105,150))
 
-plot_decision_regions(X=X_combined_std,y=y_combined,classifier=forest,test_idx=range(105,150))
 
-plt.xlabel('petal length')
-plt.ylabel('petal width')
+#%%
+from sklearn.neighbors import KNeighborsClassifier
+'''
+knn参数解释:
+metric参数可以选择不同的距离度量,不同取值可以选择不同的举例度量
+minkowski是欧式距离和曼哈顿举例的一般化
+p=2 退化为欧式举例
+p=1 退化为曼哈顿举例
+'''
+knn=KNeighborsClassifier(n_neighbors=5,p=2,metric='minkowski')
+knn.fit(X_train_std,y_train)
+
+y_pred=knn.predict(X_test_std)
+#%%
+sns.set()
+plot_decision_regions(X_combined_std,y_combined,classifier=knn,test_idx=range(105,150))
+plt.xlabel('petal length[standardized]')
+plt.ylabel('petal width [standardized]')
 plt.legend(loc='upper left')
-plt.show()
