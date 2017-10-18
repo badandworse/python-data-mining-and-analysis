@@ -92,3 +92,19 @@ y
 
 #通过调用inverse_transform方法得到原始的字符串类型值
 class_le.inverse_transform(y)
+
+
+'''
+对离散特征进行独热编码：
+即那些特征有多个特征值，但是互相之间没有大小关系时
+采用one-hot encoding(ohe)
+即一个特征值转变为一个新的特征，是这个特征值的样本该特征主为1
+反之为0
+使用pandas.get_dummies 来进行ohe
+'''
+#%%
+#get_dummies默认对
+#
+# 给定的对象中所有字符串类型的列进行ohe转换
+pd.get_dummies(df)
+
